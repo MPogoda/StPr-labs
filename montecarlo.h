@@ -24,6 +24,8 @@ private slots:
     void aslide_changed(const int& value);
     void a_changed(const double& value);
     void b_changed(const double& value);
+    void kslide_changed(const int& value);
+    void k_changed(const double& value);
     void process();
 };
 
