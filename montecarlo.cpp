@@ -110,10 +110,11 @@ void MonteCarlo::process()
             ++captured;
     }
 
-    qreal answer = static_cast<double>(captured) * (maxx - minx) * (maxy - miny) / npoints;
+    const qreal area = (maxx - minx) * (maxy - miny);
+    qreal answer = static_cast<double>(captured) * area / npoints;
     const qreal real_answer = F(maxx) - F(minx);
     qreal emp_error = qAbs(real_answer - answer);
-    qreal error = qSqrt(real_answer * (1 - real_answer / ((maxx - minx) * (maxy - miny))) / (npoints * (maxx - minx) * (maxy - miny)));
+    qreal error = qSqrt(real_answer * (area - real_answer) / npoints);
     if (calculate_pi)
     {
         answer      *= 4.0;
