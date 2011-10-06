@@ -33,32 +33,32 @@ MonteCarlo::~MonteCarlo()
 
 void MonteCarlo::a_changed(const double &value)
 {
-    ui->horizontalSlider_2->setValue(static_cast<int>(value));
+    ui->horizontalSlider_2->setValue(value);
 }
 
 void MonteCarlo::aslide_changed(const int &value)
 {
-    ui->a->setValue(static_cast<double>(value));
+    ui->a->setValue(value);
 }
 
 void MonteCarlo::b_changed(const double &value)
 {
-    ui->horizontalSlider->setValue(static_cast<int>(value));
+    ui->horizontalSlider->setValue(value);
 }
 
 void MonteCarlo::bslide_changed(const int &value)
 {
-    ui->b->setValue(static_cast<double>(value));
+    ui->b->setValue(value);
 }
 
 void MonteCarlo::k_changed(const double &value)
 {
-    ui->horizontalSlider_4->setValue(static_cast<int>(value));
+    ui->horizontalSlider_4->setValue(value);
 }
 
 void MonteCarlo::kslide_changed(const int &value)
 {
-    ui->k->setValue(static_cast<double>(value));
+    ui->k->setValue(value);
 }
 
 void MonteCarlo::prepare_for_pi()
@@ -78,12 +78,28 @@ void MonteCarlo::prepare_for_integrate()
     ui->textBrowser->clear();
 }
 
-qreal circle(const qreal &x)
+uint montecarlo(qreal (*f)(qreal), quint8 k, uint number,
+                 const qreal& minx, const qreal& dx,
+                 const qreal& miny, const qreal& dy )
+{
+    uint captured = 0;
+    qreal x, y;
+    for (; number; --number)
+    {
+        x = minx + dx * (static_cast<double>(qrand()) / RAND_MAX);
+        y = miny + dy * (static_cast<double>(qrand()) / RAND_MAX);
+        if (y <= (k * f(x)))
+            ++captured;
+    }
+    return captured;
+}
+
+qreal circle(qreal x)
 {
     return (qSqrt(1 - x*x));
 }
 
-qreal g(const qreal &x)
+qreal g(qreal x)
 {
     return (x * x);
 }
@@ -96,7 +112,8 @@ qreal G(qreal x)
 void MonteCarlo::process()
 {
     bool calculate_pi = ui->pi_lbl->isVisible();
-    qreal (*f)(const qreal&);
+
+    qreal (*f)(qreal);
     qreal (*F)(qreal);
     if (calculate_pi)
     {
@@ -109,38 +126,43 @@ void MonteCarlo::process()
         f = &g;
     }
 
-    const qreal &minx = ui->a->value();
-    const qreal &maxx = ui->b->value();
-    const qreal &k = ui->k->value();
-    const qreal miny = (qAbs(minx - maxx) < qMax(minx, maxx)) ? k * f(qMin(qAbs(minx), qAbs(maxx))) : 0;
-    const qreal maxy = k * qMax(f(minx), f(maxx));
+    // k * x^2
+    const quint8 k = ui->k->value();
+    // left edge of area
+    const qreal  minx = qMin(ui->a->value(), ui->b->value());
+    // width of area
+    const qreal  dx   = qMax(ui->a->value(), ui->b->value()) - minx;
+    // bottom edge of area
+    const qreal  miny = (dx < qMax(minx, minx + dx)) ? k * f(qMin(qAbs(minx), qAbs(minx + dx))) : 0;
+    // height of area
+    const qreal  dy = k * qMax(f(minx), f(minx + dx)) - miny;
+    // number of experiments
     const quint8 nexp = ui->nexp->value();
+    // number of points to be thrown
+    const uint   npoints = ui->npoints->value();
+    // if we're calculating PI, we have to multiply all result by 4
     const quint8 zz = (calculate_pi) ? 4 : 1;
-    const qreal area = (maxx - minx) * (maxy - miny);
-    const qreal real_answer = zz * k * F(maxx) - F(minx);
-    const uint npoints = ui->npoints->value();
-    const qreal error = zz * qSqrt(real_answer * (area - real_answer) / npoints);
+    // total area where we'll throw points
+    const qreal  area = dx * dy;
+    // real answer (cheat (: )
+    const qreal  real_answer = zz * k * F(minx + dx) - F(minx);
+    // theoretical error
+    const qreal  error = zz * qSqrt(real_answer * (area - real_answer) / npoints);
 
-
-    qreal x, y;
-    qreal sum = 0.0;
+    // used for mean values in number of experiments
+    qreal sum_answer = 0.0;
+    qreal sum_error  = 0.0;
 
     qsrand(QDateTime::currentDateTime().toTime_t());
 
     for (quint8 j = 1; j <= nexp; ++j)
     {
-        uint captured = 0;
-        for (uint i = npoints; i; --i)
-        {
-            x = minx + (maxx - minx) * (static_cast<double>(qrand()) / RAND_MAX);
-            y = miny + (maxy - miny) * (static_cast<double>(qrand()) / RAND_MAX);
-            if (y <= (k * f(x)))
-                ++captured;
-        }
+        uint captured = montecarlo(f, k, npoints, minx, dx, miny, dy);
 
         qreal answer = static_cast<double>(zz * captured) * area / npoints;
         qreal emp_error = qAbs(real_answer - answer);
-        sum += answer;
+        sum_answer += answer;
+        sum_error  += emp_error;
 
         ui->textBrowser->append(QString::fromUtf8(
             "Опыт № %1. Полученное значение: %2, отклонение: %3")
@@ -149,11 +171,12 @@ void MonteCarlo::process()
                             .arg(emp_error, 0, 'f', 3));
     }
 
-    sum /= nexp;
+    sum_error /= nexp;
+    sum_answer /= nexp;
 
     ui->textBrowser->append(QString::fromUtf8(
         "Среднее значение: %1, среднее отклонение: %2, ожидаемое теоретическое отклонение: %4")
-                        .arg(sum, 0, 'f', 3)
-                        .arg(qAbs(real_answer - sum), 0, 'f', 3)
+                        .arg(sum_answer, 0, 'f', 3)
+                        .arg(sum_error, 0, 'f', 3)
                         .arg(error, 0, 'f', 3));
 }
