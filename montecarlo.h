@@ -2,6 +2,9 @@
 #define MONTECARLO_H
 
 #include <QDialog>
+#include <QGraphicsScene>
+#include <qwt_plot.h>
+#include <qwt_plot_curve.h>
 
 namespace Ui {
     class MonteCarlo;
@@ -17,8 +20,10 @@ public:
 public slots:
     void prepare_for_pi();
     void prepare_for_integrate();
+    void prepare_for_plot();
 private:
     Ui::MonteCarlo *ui;
+    QwtPlot *plot1;
 private slots:
     void bslide_changed(const int& value);
     void aslide_changed(const int& value);
@@ -27,6 +32,7 @@ private slots:
     void kslide_changed(const int& value);
     void k_changed(const double& value);
     void process();
+    void process_plot();
 };
 
 qreal circle(const qreal& x);

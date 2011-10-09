@@ -16,6 +16,10 @@ MW::MW(QWidget *parent) :
             monteCarlo, SLOT(prepare_for_integrate()));
     connect(ui->bt2, SIGNAL(clicked()),
             monteCarlo, SLOT(show()));
+    connect(ui->bt3, SIGNAL(clicked()),
+            monteCarlo, SLOT(prepare_for_plot()));
+    connect(ui->bt3, SIGNAL(clicked()),
+            monteCarlo, SLOT(show()));
 }
 
 MW::~MW()

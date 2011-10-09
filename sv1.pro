@@ -4,6 +4,7 @@
 #
 #-------------------------------------------------
 
+CONFIG += qwt
 QT       += core gui
 
 TARGET = sv1
@@ -20,10 +21,7 @@ HEADERS  += mw.h \
 FORMS    += mw.ui \
     montecarlo.ui
 
-
-
-
-
-
-
+INCLUDEPATH += "/usr/include/qwt6"
+DEPENDPATH  += "/usr/include/qwt6"
+LIBS        += -lqwt
 

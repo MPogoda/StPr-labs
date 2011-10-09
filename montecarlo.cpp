@@ -3,13 +3,17 @@
 #include <qmath.h>
 #include <QString>
 #include <QDateTime>
+#include <QVector>
 #include <QDebug>
+
 
 MonteCarlo::MonteCarlo(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::MonteCarlo)
 {
     ui->setupUi(this);
+    plot1 = new QwtPlot(this);
+    ui->verticalLayout_8->addWidget(plot1);
     connect(ui->a, SIGNAL(valueChanged(double)),
             this, SLOT(a_changed(double)));
     connect(ui->horizontalSlider_2, SIGNAL(valueChanged(int)),
@@ -24,11 +28,14 @@ MonteCarlo::MonteCarlo(QWidget *parent) :
             this, SLOT(kslide_changed(int)));
     connect(ui->pushButton, SIGNAL(clicked()),
             this, SLOT(process()));
+    connect(ui->pushButton_3, SIGNAL(clicked()),
+            this, SLOT(process_plot()));
 }
 
 MonteCarlo::~MonteCarlo()
 {
     delete ui;
+    delete plot1;
 }
 
 void MonteCarlo::a_changed(const double &value)
@@ -64,18 +71,39 @@ void MonteCarlo::kslide_changed(const int &value)
 void MonteCarlo::prepare_for_pi()
 {
     ui->pi_lbl->show();
-    ui->int_frame->hide();
+    ui->int_groupBox->hide();
     ui->a->setValue(0);
     ui->b->setValue(1);
     ui->k->setValue(1);
     ui->textBrowser->clear();
+    ui->textBrowser->show();
+    ui->pushButton->show();
+    ui->pushButton_3->hide();
+    ui->groupBox_5->show();
+    plot1->hide();
 }
 
 void MonteCarlo::prepare_for_integrate()
 {
     ui->pi_lbl->hide();
-    ui->int_frame->show();
+    ui->int_groupBox->show();
     ui->textBrowser->clear();
+    ui->textBrowser->show();
+    ui->pushButton_3->hide();
+    ui->pushButton->show();
+    ui->groupBox_5->show();
+    plot1->hide();
+}
+
+void MonteCarlo::prepare_for_plot()
+{
+    ui->pi_lbl->hide();
+    ui->int_groupBox->hide();
+    ui->textBrowser->hide();
+    ui->pushButton->hide();
+    ui->pushButton_3->show();
+    ui->groupBox_5->hide();
+    plot1->show();
 }
 
 uint montecarlo(qreal (*f)(qreal), quint8 k, uint number,
@@ -145,9 +173,9 @@ void MonteCarlo::process()
     // total area where we'll throw points
     const qreal  area = dx * dy;
     // real answer (cheat (: )
-    const qreal  real_answer = zz * k * F(minx + dx) - F(minx);
+    const qreal  real_answer = zz * k * (F(minx + dx) - F(minx));
     // theoretical error
-    const qreal  error = zz * qSqrt(real_answer * (area - real_answer) / npoints);
+    const qreal  error = qSqrt(real_answer * (zz * area - real_answer) / npoints);
 
     // used for mean values in number of experiments
     qreal sum_answer = 0.0;
@@ -179,4 +207,44 @@ void MonteCarlo::process()
                         .arg(sum_answer, 0, 'f', 3)
                         .arg(sum_error, 0, 'f', 3)
                         .arg(error, 0, 'f', 3));
+
+}
+
+void MonteCarlo::process_plot()
+{
+    plot1->setAutoReplot();
+    const uint nmax = 300000;
+    const uint nmin = 50000;
+    const uint nexp = ui->nexp->value();
+
+    QVector<qreal> th, em, se;
+    const qreal real_answer   = qAtan(1);
+    const qreal error_prepare = qSqrt(real_answer * (1 - real_answer));
+    uint captured;
+    qreal error;
+
+    qsrand(QDateTime::currentDateTime().toTime_t());
+
+    for (uint i = nmin; i <= nmax; i += 1000)
+    {
+        error  = 0.0;
+        for (uint j = nexp; j; --j)
+        {
+            captured = montecarlo(&circle, 1, i,0, 1, 0, 1);
+            error += qAbs(real_answer - (static_cast<double>(captured) / i));
+        }
+        error /= nexp;
+        th << error_prepare / qSqrt(i);
+        em << error;
+        se << i;
+    }
+
+    QwtPlotCurve *curve1 = new QwtPlotCurve("theory");
+    QwtPlotCurve *curve2 = new QwtPlotCurve("reality");
+    curve2->attach(plot1);
+    curve1->attach(plot1);
+    curve2->setPen(QPen(Qt::cyan));
+    curve1->setPen(QPen(Qt::red));
+    curve1->setSamples(se, th);
+    curve2->setSamples(se, em);
 }
