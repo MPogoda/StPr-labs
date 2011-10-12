@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include <QWidget>
-#include "montecarlo.h"
 
 namespace Ui {
     class MW;
@@ -19,7 +18,11 @@ public:
 
 private:
     Ui::MW *ui;
-    MonteCarlo *monteCarlo;
+private slots:
+    void bt1();
+    void bt2();
+    void bt3();
+    void bt4();
 };
 
 #endif // MW_H

@@ -4,6 +4,9 @@
 #
 #-------------------------------------------------
 
+INCLUDEPATH += "/usr/include/qwt6/"
+LIBS += "/usr/lib/libqwt6.so"
+
 CONFIG += qwt
 QT       += core gui
 
@@ -13,15 +16,23 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mw.cpp \
-    montecarlo.cpp
+    montecarlo.cpp \
+    task4.cpp
 
 HEADERS  += mw.h \
-    montecarlo.h
+    montecarlo.h \
+    task4.h
 
 FORMS    += mw.ui \
-    montecarlo.ui
+    montecarlo.ui \
+    task4.ui
 
-INCLUDEPATH += "/usr/include/qwt6"
-DEPENDPATH  += "/usr/include/qwt6"
-LIBS        += -lqwt
+
+
+
+
+
+
+
+
 

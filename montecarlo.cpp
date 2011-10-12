@@ -3,44 +3,31 @@
 #include <qmath.h>
 #include <QString>
 #include <QDateTime>
-#include <QVector>
-#include <QDebug>
-
 
 MonteCarlo::MonteCarlo(QWidget *parent) :
     QDialog(parent),
+    plot1(NULL),
     ui(new Ui::MonteCarlo)
 {
     ui->setupUi(this);
-    plot1 = new QwtPlot(this);
-    ui->verticalLayout_8->addWidget(plot1);
-    connect(ui->a, SIGNAL(valueChanged(double)),
-            this, SLOT(a_changed(double)));
-    connect(ui->horizontalSlider_2, SIGNAL(valueChanged(int)),
-            this, SLOT(aslide_changed(int)));
-    connect(ui->b, SIGNAL(valueChanged(double)),
-            this, SLOT(b_changed(double)));
-    connect(ui->horizontalSlider, SIGNAL(valueChanged(int)),
-            this, SLOT(bslide_changed(int)));
-    connect(ui->k, SIGNAL(valueChanged(double)),
-            this, SLOT(k_changed(double)));
-    connect(ui->horizontalSlider_4, SIGNAL(valueChanged(int)),
-            this, SLOT(kslide_changed(int)));
-    connect(ui->pushButton, SIGNAL(clicked()),
-            this, SLOT(process()));
-    connect(ui->pushButton_3, SIGNAL(clicked()),
-            this, SLOT(process_plot()));
 }
 
 MonteCarlo::~MonteCarlo()
 {
     delete ui;
-    delete plot1;
+    if (plot1 != NULL)
+    {
+        delete curve1;
+        delete curve2;
+        delete plot1;
+    }
 }
 
 void MonteCarlo::a_changed(const double &value)
 {
     ui->horizontalSlider_2->setValue(value);
+    if (ui->a->value() > ui->b->value())
+        ui->b->setValue(value);
 }
 
 void MonteCarlo::aslide_changed(const int &value)
@@ -51,6 +38,8 @@ void MonteCarlo::aslide_changed(const int &value)
 void MonteCarlo::b_changed(const double &value)
 {
     ui->horizontalSlider->setValue(value);
+    if (ui->b->value() < ui->a->value())
+        ui->a->setValue(value);
 }
 
 void MonteCarlo::bslide_changed(const int &value)
@@ -68,85 +57,123 @@ void MonteCarlo::kslide_changed(const int &value)
     ui->k->setValue(value);
 }
 
-void MonteCarlo::prepare_for_pi()
+void MonteCarlo::calculate_pi()
 {
-    ui->pi_lbl->show();
     ui->int_groupBox->hide();
-    ui->a->setValue(0);
-    ui->b->setValue(1);
-    ui->k->setValue(1);
-    ui->textBrowser->clear();
-    ui->textBrowser->show();
-    ui->pushButton->show();
+    ui->k->setValue(1.0);
+
     ui->pushButton_3->hide();
-    ui->groupBox_5->show();
-    plot1->hide();
+    ui->npoints_min_gb->hide();
+
+    connect(ui->pushButton, SIGNAL(clicked()),
+            this, SLOT(process()));
+    exec();
 }
 
-void MonteCarlo::prepare_for_integrate()
+void MonteCarlo::calculate_integral()
 {
     ui->pi_lbl->hide();
-    ui->int_groupBox->show();
-    ui->textBrowser->clear();
-    ui->textBrowser->show();
     ui->pushButton_3->hide();
-    ui->pushButton->show();
-    ui->groupBox_5->show();
-    plot1->hide();
+    ui->npoints_min_gb->hide();
+
+    connect(ui->a, SIGNAL(valueChanged(double)),
+            this, SLOT(a_changed(double)));
+    connect(ui->horizontalSlider_2, SIGNAL(valueChanged(int)),
+            this, SLOT(aslide_changed(int)));
+    connect(ui->b, SIGNAL(valueChanged(double)),
+            this, SLOT(b_changed(double)));
+    connect(ui->horizontalSlider, SIGNAL(valueChanged(int)),
+            this, SLOT(bslide_changed(int)));
+    connect(ui->k, SIGNAL(valueChanged(double)),
+            this, SLOT(k_changed(double)));
+    connect(ui->horizontalSlider_4, SIGNAL(valueChanged(int)),
+            this, SLOT(kslide_changed(int)));
+    connect(ui->pushButton, SIGNAL(clicked()),
+            this, SLOT(process()));
+
+    exec();
 }
 
-void MonteCarlo::prepare_for_plot()
+void MonteCarlo::plot()
 {
     ui->pi_lbl->hide();
     ui->int_groupBox->hide();
     ui->textBrowser->hide();
     ui->pushButton->hide();
-    ui->pushButton_3->show();
-    ui->groupBox_5->hide();
-    plot1->show();
+    ui->npoints->setMaximum(250000);
+    ui->horizontalSlider_3->setMaximum(250000);
+
+    plot1   = new QwtPlot(this);
+    curve1  = new QwtPlotCurve("Theory");
+    curve2  = new QwtPlotCurve("Real");
+    curve1->attach(plot1);
+    curve2->attach(plot1);
+    curve1->setPen(QPen(Qt::red));
+    curve2->setPen(QPen(Qt::blue));
+    ui->verticalLayout_8->addWidget(plot1);
+
+    connect(ui->pushButton_3, SIGNAL(clicked()),
+            this, SLOT(process_plot()));
+
+    exec();
 }
 
-uint montecarlo(qreal (*f)(qreal), quint8 k, uint number,
-                 const qreal& minx, const qreal& dx,
-                 const qreal& miny, const qreal& dy )
+quint32 montecarlo(bool (*f)(const qreal&, const qreal&),
+                   const qreal& k, quint32 number,
+                   const qreal& minx, const qreal& dx,
+                   const qreal& miny, const qreal& dy )
 {
-    uint captured = 0;
+    quint32 captured(0);
     qreal x, y;
     for (; number; --number)
     {
-        x = minx + dx * (static_cast<double>(qrand()) / RAND_MAX);
-        y = miny + dy * (static_cast<double>(qrand()) / RAND_MAX);
-        if (y <= (k * f(x)))
+        x = minx + dx * rand() / RAND_MAX;
+        y = (miny + dy * rand() / RAND_MAX) / k;
+        if (f(x, y))
             ++captured;
     }
     return captured;
 }
 
-qreal circle(qreal x)
+bool circle(const qreal& x, const qreal& y)
 {
-    return (qSqrt(1 - x*x));
+    return ((x*x + y*y) <= 1.0);
 }
 
-qreal g(qreal x)
+qreal Circle(const qreal& x)
 {
-    return (x * x);
+    return (x) ? qAtan(x) : 0;
 }
 
-qreal G(qreal x)
+qreal sqr(const qreal& x)
+{
+    return x*x;
+}
+
+bool g(const qreal& x, const qreal& y)
+{
+    return (y < sqr(x));
+}
+
+qreal G(const qreal& x)
 {
     return x * x * x / 3.0;
+}
+
+bool t(const qreal& _, const qreal& y)
+{
+    return (y < 0.5);
 }
 
 void MonteCarlo::process()
 {
     bool calculate_pi = ui->pi_lbl->isVisible();
-
-    qreal (*f)(qreal);
-    qreal (*F)(qreal);
+    bool (*f)(const qreal&, const qreal&);
+    qreal (*F)(const qreal&);
     if (calculate_pi)
     {
         f = &circle;
-        F = &qAtan;
+        F = &Circle;
     }
     else
     {
@@ -155,96 +182,98 @@ void MonteCarlo::process()
     }
 
     // k * x^2
-    const quint8 k = ui->k->value();
+    const qreal     &k(         ui->k->value()                                  );
     // left edge of area
-    const qreal  minx = qMin(ui->a->value(), ui->b->value());
+    const qreal     &minx(      ui->a->value()                                  );
     // width of area
-    const qreal  dx   = qMax(ui->a->value(), ui->b->value()) - minx;
+    const qreal     dx(         ui->b->value() - minx                           );
     // bottom edge of area
-    const qreal  miny = (dx < qMax(minx, minx + dx)) ? k * f(qMin(qAbs(minx), qAbs(minx + dx))) : 0;
+    const qreal     miny(       ((minx < 0.0) && (dx > -minx)) ?
+                                (k * sqr(qMin(qAbs(minx), qAbs(minx + dx)))) :
+                                0.0                                             );
     // height of area
-    const qreal  dy = k * qMax(f(minx), f(minx + dx)) - miny;
+    const qreal     dy(         k * qMax(sqr(minx), sqr(minx + dx)) - miny      );
     // number of experiments
-    const quint8 nexp = ui->nexp->value();
+    const quint8    nexp(       ui->nexp->value()                               );
     // number of points to be thrown
-    const uint   npoints = ui->npoints->value();
+    const quint32   npoints(    ui->npoints->value()                            );
     // if we're calculating PI, we have to multiply all result by 4
-    const quint8 zz = (calculate_pi) ? 4 : 1;
+    const quint8    zz(         (calculate_pi) ? 4 : 1                          );
     // total area where we'll throw points
-    const qreal  area = dx * dy;
+    const qreal     area(       dx * dy                                         );
     // real answer (cheat (: )
-    const qreal  real_answer = zz * k * (F(minx + dx) - F(minx));
+    const qreal     real_answer(zz * k * (F(minx + dx) - F(minx))               );
     // theoretical error
-    const qreal  error = qSqrt(real_answer * (zz * area - real_answer) / npoints);
+    const qreal     error(      qSqrt(real_answer *
+                                      (zz * area - real_answer) / npoints)      );
 
     // used for mean values in number of experiments
-    qreal sum_answer = 0.0;
-    qreal sum_error  = 0.0;
+    qreal sum_answer(   0.0);
+    qreal sum_error(    0.0 );
+    qreal answer, emp_error;
+    uint captured;
 
-    qsrand(QDateTime::currentDateTime().toTime_t());
+    srand(QDateTime::currentDateTime().toTime_t());
 
-    for (quint8 j = 1; j <= nexp; ++j)
+    for (quint8 j(1); j <= nexp; ++j)
     {
-        uint captured = montecarlo(f, k, npoints, minx, dx, miny, dy);
+        captured    = montecarlo(f, k, npoints, minx, dx, miny, dy);
 
-        qreal answer = static_cast<double>(zz * captured) * area / npoints;
-        qreal emp_error = qAbs(real_answer - answer);
+        answer      = zz * captured * area / npoints;
+        emp_error   = qAbs(real_answer - answer);
         sum_answer += answer;
         sum_error  += emp_error;
 
         ui->textBrowser->append(QString::fromUtf8(
             "Опыт № %1. Полученное значение: %2, отклонение: %3")
                             .arg(j)
-                            .arg(answer, 0, 'f', 3)
-                            .arg(emp_error, 0, 'f', 3));
+                            .arg(answer, 0, 'f', 4)
+                            .arg(emp_error, 0, 'f', 4));
     }
 
-    sum_error /= nexp;
-    sum_answer /= nexp;
+    sum_error   /= nexp;
+    sum_answer  /= nexp;
 
     ui->textBrowser->append(QString::fromUtf8(
-        "Среднее значение: %1, среднее отклонение: %2, ожидаемое теоретическое отклонение: %4")
-                        .arg(sum_answer, 0, 'f', 3)
-                        .arg(sum_error, 0, 'f', 3)
-                        .arg(error, 0, 'f', 3));
+        "Среднее значение: %1, среднее отклонение: %2, ожидаемое теоретическое отклонение: %3")
+                        .arg(sum_answer, 0, 'f', 4)
+                        .arg(sum_error, 0, 'f', 4)
+                        .arg(error, 0, 'f', 4));
 
 }
 
 void MonteCarlo::process_plot()
 {
-    plot1->setAutoReplot();
-    const uint nmax = 300000;
-    const uint nmin = 50000;
-    const uint nexp = ui->nexp->value();
+    const quint32 nmax( ui->npoints->value()    );
+    const quint32 nmin( ui->npoints_min->value());
+    const quint8  nexp( ui->nexp->value()       );
+    const quint32 step( (nmax - nmin) / 200     );
 
-    QVector<qreal> th, em, se;
-    const qreal real_answer   = qAtan(1);
-    const qreal error_prepare = qSqrt(real_answer * (1 - real_answer));
-    uint captured;
+    static double th[201], em[201], se[201];
+    const qreal real_answer(0.5);
+    const qreal error_prepare(qSqrt(real_answer * (1.0 - real_answer)));
+    quint32 captured;
     qreal error;
 
-    qsrand(QDateTime::currentDateTime().toTime_t());
+    srand(QDateTime::currentDateTime().toTime_t());
 
-    for (uint i = nmin; i <= nmax; i += 1000)
+    quint8 z(0);
+
+    for (quint32 i = nmin; i <= nmax; i += step, ++z)
     {
         error  = 0.0;
-        for (uint j = nexp; j; --j)
+        for (quint8 j = nexp; j; --j)
         {
-            captured = montecarlo(&circle, 1, i,0, 1, 0, 1);
-            error += qAbs(real_answer - (static_cast<double>(captured) / i));
+            captured = montecarlo(&t, 1, i, 0, 1, 0, 1);
+            error += qAbs(real_answer - 1.0 * captured / i);
         }
         error /= nexp;
-        th << error_prepare / qSqrt(i);
-        em << error;
-        se << i;
+        th[z] = error_prepare / qSqrt(i);
+        em[z] = error;
+        se[z] = i;
     }
 
-    QwtPlotCurve *curve1 = new QwtPlotCurve("theory");
-    QwtPlotCurve *curve2 = new QwtPlotCurve("reality");
-    curve2->attach(plot1);
-    curve1->attach(plot1);
-    curve2->setPen(QPen(Qt::cyan));
-    curve1->setPen(QPen(Qt::red));
-    curve1->setSamples(se, th);
-    curve2->setSamples(se, em);
+    curve1->setSamples(se, th, 201);
+    curve2->setSamples(se, em, 201);
+    plot1->replot();
 }

@@ -1,8 +1,8 @@
+
 #ifndef MONTECARLO_H
 #define MONTECARLO_H
 
 #include <QDialog>
-#include <QGraphicsScene>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 
@@ -17,13 +17,14 @@ class MonteCarlo : public QDialog
 public:
     explicit MonteCarlo(QWidget *parent = 0);
     ~MonteCarlo();
-public slots:
-    void prepare_for_pi();
-    void prepare_for_integrate();
-    void prepare_for_plot();
+    void calculate_pi();
+    void calculate_integral();
+    void plot();
 private:
-    Ui::MonteCarlo *ui;
-    QwtPlot *plot1;
+    Ui::MonteCarlo  *ui;
+    QwtPlot         *plot1;
+    QwtPlotCurve    *curve1;
+    QwtPlotCurve    *curve2;
 private slots:
     void bslide_changed(const int& value);
     void aslide_changed(const int& value);
@@ -34,7 +35,4 @@ private slots:
     void process();
     void process_plot();
 };
-
-qreal circle(const qreal& x);
-qreal g(const qreal& x);
 #endif // MONTECARLO_H
