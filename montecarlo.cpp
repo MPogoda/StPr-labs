@@ -23,40 +23,6 @@ MonteCarlo::~MonteCarlo()
     }
 }
 
-void MonteCarlo::a_changed(const double &value)
-{
-    ui->horizontalSlider_2->setValue(value);
-    if (ui->a->value() > ui->b->value())
-        ui->b->setValue(value);
-}
-
-void MonteCarlo::aslide_changed(const int &value)
-{
-    ui->a->setValue(value);
-}
-
-void MonteCarlo::b_changed(const double &value)
-{
-    ui->horizontalSlider->setValue(value);
-    if (ui->b->value() < ui->a->value())
-        ui->a->setValue(value);
-}
-
-void MonteCarlo::bslide_changed(const int &value)
-{
-    ui->b->setValue(value);
-}
-
-void MonteCarlo::k_changed(const double &value)
-{
-    ui->horizontalSlider_4->setValue(value);
-}
-
-void MonteCarlo::kslide_changed(const int &value)
-{
-    ui->k->setValue(value);
-}
-
 void MonteCarlo::calculate_pi()
 {
     ui->int_groupBox->hide();
@@ -76,18 +42,6 @@ void MonteCarlo::calculate_integral()
     ui->pushButton_3->hide();
     ui->npoints_min_gb->hide();
 
-    connect(ui->a, SIGNAL(valueChanged(double)),
-            this, SLOT(a_changed(double)));
-    connect(ui->horizontalSlider_2, SIGNAL(valueChanged(int)),
-            this, SLOT(aslide_changed(int)));
-    connect(ui->b, SIGNAL(valueChanged(double)),
-            this, SLOT(b_changed(double)));
-    connect(ui->horizontalSlider, SIGNAL(valueChanged(int)),
-            this, SLOT(bslide_changed(int)));
-    connect(ui->k, SIGNAL(valueChanged(double)),
-            this, SLOT(k_changed(double)));
-    connect(ui->horizontalSlider_4, SIGNAL(valueChanged(int)),
-            this, SLOT(kslide_changed(int)));
     connect(ui->pushButton, SIGNAL(clicked()),
             this, SLOT(process()));
 
@@ -101,7 +55,6 @@ void MonteCarlo::plot()
     ui->textBrowser->hide();
     ui->pushButton->hide();
     ui->npoints->setMaximum(250000);
-    ui->horizontalSlider_3->setMaximum(250000);
 
     plot1   = new QwtPlot(this);
     curve1  = new QwtPlotCurve("Theory");

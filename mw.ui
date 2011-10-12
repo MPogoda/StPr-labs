@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MW</class>
  <widget class="QMainWindow" name="MW">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>590</width>
+    <height>143</height>
+   </rect>
+  </property>
   <property name="minimumSize">
    <size>
     <width>500</width>
@@ -17,7 +25,7 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>829</width>
+      <width>896</width>
       <height>141</height>
      </rect>
     </property>
@@ -25,40 +33,40 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>#1 :: Посчитать число П методом Монте-Карло
-#2 :: Посчитать определённый интеграл методом Монте-Карло
-#3 :: Исследовать зависимость погрешности метода Монте-Карло от количества точек
-#4 :: Проверить гипотезу о равномерности распределения встроенного генератора псевдослучайных чисел</string>
+        <string>#1 :: Проверить гипотезу о равномерности распределения встроенного генератора псевдослучайных чисел
+#2 :: Посчитать число П методом Монте-Карло
+#3 :: Посчитать определённый интеграл методом Монте-Карло
+#4 :: Исследовать зависимость погрешности метода Монте-Карло от количества точек</string>
        </property>
       </widget>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>1</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="bt1">
          <property name="text">
-          <string>#1</string>
+          <string>2</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="bt2">
          <property name="text">
-          <string>#2</string>
+          <string>3</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="bt3">
          <property name="text">
-          <string>#3</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>#4</string>
+          <string>4</string>
          </property>
         </widget>
        </item>

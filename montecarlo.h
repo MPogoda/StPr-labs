@@ -26,12 +26,6 @@ private:
     QwtPlotCurve    *curve1;
     QwtPlotCurve    *curve2;
 private slots:
-    void bslide_changed(const int& value);
-    void aslide_changed(const int& value);
-    void a_changed(const double& value);
-    void b_changed(const double& value);
-    void kslide_changed(const int& value);
-    void k_changed(const double& value);
     void process();
     void process_plot();
 };
